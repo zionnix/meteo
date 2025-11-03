@@ -1,10 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   const API_KEY = '840f2e7255bcf146931fd21cbbbe7b97';
-  const GEOCODING_URL = (q, limit=6) =>
+
+  // --- Endpoints ---
+  const GEOCODING_URL = (q, limit = 6) =>
     `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=${limit}&appid=${API_KEY}`;
+  
   const ONECALL = (lat, lon) =>
-    `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&exclude=minutely,alerts&appid=${API_KEY}`;
+    `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&units=metric&exclude=minutely,alerts&appid=${API_KEY}&lang=fr`;
 
   // --- DOM ---
   const cityInput = document.getElementById('cityInput');
@@ -26,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchPlaces(query, limit = 6) {
     try {
       const res = await fetch(GEOCODING_URL(query, limit));
-      if (!res.ok) throw new Error('Erreur géocodage');
+      if (!res.ok) throw new Error(`Erreur géocodage : ${res.status}`);
       return await res.json();
     } catch (err) {
       console.error(err);
@@ -37,7 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchWeather(lat, lon) {
     try {
       const res = await fetch(ONECALL(lat, lon));
-      if (!res.ok) throw new Error('Erreur API météo');
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(`Erreur API météo : ${res.status} - ${msg}`);
+      }
       return await res.json();
     } catch (err) {
       console.error(err);
@@ -62,15 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const d0 = data.daily[0];
     minMaxEl.textContent = `Min ${Math.round(d0.temp.min)}° / Max ${Math.round(d0.temp.max)}°`;
 
-    const pop = Math.round((data.hourly[0]?.pop || 0) * 100);
+    const pop = Math.round((data.hourly?.[0]?.pop || 0) * 100);
     precipInfoEl.textContent = `Probabilité précip. ${pop}%`;
     adviceEl.textContent = clothingAdvice(data.current.temp, pop);
 
-    drawSparkline(data.hourly.slice(0, 24).map(h => h.temp));
+    drawSparkline(data.hourly?.slice(0, 24).map(h => h.temp) || []);
 
     // next hours
     hourItems.innerHTML = '';
-    data.hourly.slice(0, 12).forEach(h => {
+    (data.hourly?.slice(0, 12) || []).forEach(h => {
       const d = toLocalDateTime(h.dt, tz);
       const el = document.createElement('div');
       el.className = 'hourItem';
