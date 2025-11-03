@@ -27,12 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let debounceTimer;
 
+  // -----------------------
   // Autocomplétion des villes
+  // -----------------------
   cityInput.addEventListener('input', async (e) => {
     const query = e.target.value.trim();
-    
     clearTimeout(debounceTimer);
-    
+
     if (query.length < 2) {
       suggestionsEl.classList.remove('show');
       suggestionsEl.innerHTML = '';
@@ -43,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const response = await fetch(GEO_URL(query, 5));
         const cities = await response.json();
-        
         if (cities.length > 0) {
           suggestionsEl.innerHTML = cities.map(city => {
             const displayName = `${city.name}${city.state ? ', ' + city.state : ''}, ${city.country}`;
@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 300);
   });
 
-  // Sélection d'une suggestion
   suggestionsEl.addEventListener('click', async (e) => {
     if (e.target.tagName === 'LI') {
       const cityName = e.target.dataset.city;
@@ -67,8 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cityInput.value = `${cityName}, ${country}`;
       suggestionsEl.classList.remove('show');
       suggestionsEl.innerHTML = '';
-      
-      // Lancer automatiquement la recherche
+
       try {
         const {data, displayName} = await fetchWeather(cityName);
         showWeather(data, displayName);
@@ -76,13 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Fermer les suggestions si on clique ailleurs
   document.addEventListener('click', (e) => {
     if (!cityInput.contains(e.target) && !suggestionsEl.contains(e.target)) {
       suggestionsEl.classList.remove('show');
     }
   });
 
+  // -----------------------
+  // Fetch météo
+  // -----------------------
   async function fetchWeather(city) {
     try {
       const geoRes = await fetch(GEO_URL(city));
@@ -102,6 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // -----------------------
+  // Affichage météo
+  // -----------------------
   function showWeather(weatherData, displayName) {
     const data = weatherData.list[0];
     const tzOffset = weatherData.city.timezone || 0;
@@ -116,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     precipInfoEl.textContent = `Probabilité précip. ${pop}%`;
     adviceEl.textContent = clothingAdvice(data.main.temp, pop);
 
-    drawSparkline(weatherData.list.slice(0, 8).map(h => h.main.temp));
+    drawSparkline(weatherData.list.slice(0, 24).map(h => h.main.temp));
 
     hourItems.innerHTML = '';
     weatherData.list.slice(0, 12).forEach(h => {
@@ -147,15 +150,39 @@ document.addEventListener('DOMContentLoaded', () => {
     return parts.join(' — ');
   }
 
+  // -----------------------
+  // Sparkline barres colorées
+  // -----------------------
   function drawSparkline(values){
-    const w=240,h=60,pad=6;
+    const w = 240, h = 60, pad = 6;
     if(!values.length){ sparkline.innerHTML=''; return; }
-    const min=Math.min(...values), max=Math.max(...values), range=Math.max(1,max-min);
-    const step=(w-pad*2)/(values.length-1);
-    const pts=values.map((v,i)=>`${pad+i*step},${h-pad-(v-min)/range*(h-pad*2)}`);
-    sparkline.innerHTML=`<polyline fill="none" stroke="#00b4ff" stroke-width="2" points="${pts.join(' ')}" />`;
+
+    sparkline.innerHTML = '';
+    const max = Math.max(...values);
+    
+    values.forEach(temp => {
+      const bar = document.createElement('div');
+      bar.style.height = `${(temp/max)*100}%`;
+      bar.style.width = `${(w/values.length)-2}px`;
+      bar.style.marginRight = '2px';
+      bar.style.display = 'inline-block';
+      bar.style.verticalAlign = 'bottom';
+      bar.style.borderRadius = '3px';
+
+      // couleur selon température
+      if(temp <= 5) bar.style.backgroundColor = '#00b4ff';
+      else if(temp <= 15) bar.style.backgroundColor = '#3ab0ff';
+      else if(temp <= 22) bar.style.backgroundColor = '#ffb93a';
+      else bar.style.backgroundColor = '#ff5e3a';
+
+      bar.title = `${temp}°C`; // tooltip
+      sparkline.appendChild(bar);
+    });
   }
 
+  // -----------------------
+  // Events
+  // -----------------------
   validateBtn.addEventListener('click', async () => {
     if(!cityInput.value.trim()) return;
     try{
@@ -169,7 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.intro').classList.remove('fadeOut');
   });
 
-  // Validation avec la touche Entrée
   cityInput.addEventListener('keypress', async (e) => {
     if (e.key === 'Enter' && cityInput.value.trim()) {
       suggestionsEl.classList.remove('show');
@@ -180,70 +206,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Géolocalisation
-  const geoBtnElement = document.getElementById('locBtn');
-  console.log('Bouton géolocalisation trouvé:', geoBtnElement);
-  
-  if (geoBtnElement) {
-    geoBtnElement.addEventListener('click', async () => {
-      console.log('Clic sur géolocalisation détecté');
-      
+  if (geoBtn) {
+    geoBtn.addEventListener('click', async () => {
       if (!navigator.geolocation) {
         alert("La géolocalisation n'est pas supportée par votre navigateur");
         return;
       }
 
-      geoBtnElement.textContent = 'Localisation...';
-      geoBtnElement.disabled = true;
+      geoBtn.textContent = 'Localisation...';
+      geoBtn.disabled = true;
 
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          console.log('Position obtenue:', position.coords);
           const { latitude, longitude } = position.coords;
           try {
             const weatherRes = await fetch(FORECAST_URL(latitude, longitude));
             const data = await weatherRes.json();
-            console.log('Données météo reçues:', data);
-            
             if (data.cod !== "200") throw new Error("Erreur API météo");
-
             const displayName = `${data.city.name}, ${data.city.country}`;
             showWeather(data, displayName);
           } catch (err) {
             console.error('Erreur fetch météo:', err);
             alert("Impossible de récupérer la météo : " + err.message);
           } finally {
-            geoBtnElement.textContent = 'Votre position';
-            geoBtnElement.disabled = false;
+            geoBtn.textContent = 'Votre position';
+            geoBtn.disabled = false;
           }
         },
         (error) => {
-          console.error('Erreur géolocalisation:', error);
-          let message = "Impossible d'accéder à votre position.";
-          switch(error.code) {
-            case error.PERMISSION_DENIED:
-              message = "Vous avez refusé l'accès à votre position. Veuillez autoriser la géolocalisation dans les paramètres de votre navigateur.";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              message = "Votre position est indisponible.";
-              break;
-            case error.TIMEOUT:
-              message = "La demande de géolocalisation a expiré.";
-              break;
-          }
-          alert(message);
-          geoBtnElement.textContent = 'Votre position';
-          geoBtnElement.disabled = false;
+          alert("Impossible d'accéder à votre position.");
+          geoBtn.textContent = 'Votre position';
+          geoBtn.disabled = false;
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
-  } else {
-    console.error('Le bouton #locBtn n\'a pas été trouvé dans le DOM');
   }
 
 });
