@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const GEOCODING_URL = (q, limit = 6) =>
     `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=${limit}&appid=${API_KEY}`;
   
-  const ONECALL = (lat, lon) =>
-    `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&units=metric&exclude=minutely,alerts&appid=${API_KEY}&lang=fr`;
+  const FORECAST = (lat, lon) =>
+    `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=fr`;
 
   // --- DOM ---
   const cityInput = document.getElementById('cityInput');
@@ -37,9 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function fetchWeather(lat, lon) {
+  async function fetchForecast(lat, lon) {
     try {
-      const res = await fetch(ONECALL(lat, lon));
+      const res = await fetch(FORECAST(lat, lon));
       if (!res.ok) {
         const msg = await res.text();
         throw new Error(`Erreur API météo : ${res.status} - ${msg}`);
@@ -51,41 +51,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function toLocalDateTime(unixSec, tzOffsetSec) {
-    return new Date((unixSec + tzOffsetSec) * 1000);
+  function toLocalDateTime(unixSec, tzOffsetSec = 0) {
+    return new Date(unixSec * 1000 + tzOffsetSec * 1000);
   }
 
   // --- Affichage météo ---
   function showWeather(data, displayName) {
-    const tz = data.timezone_offset || 0;
-    const now = toLocalDateTime(data.current.dt, tz);
+    // Prendre la première entrée comme "maintenant"
+    const nowData = data.list[0];
+    const tzOffset = data.city.timezone || 0;
 
-    placeNameEl.textContent = displayName;
+    const now = toLocalDateTime(nowData.dt, tzOffset);
+
+    placeNameEl.textContent = `${displayName} (${data.city.country})`;
     localTimeEl.textContent = `${now.toLocaleDateString()} • ${now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
-    tempNowEl.textContent = `${Math.round(data.current.temp)}°C`;
-    weatherDescEl.textContent = data.current.weather[0].description;
+    tempNowEl.textContent = `${Math.round(nowData.main.temp)}°C`;
+    weatherDescEl.textContent = nowData.weather[0].description;
 
-    const d0 = data.daily[0];
-    minMaxEl.textContent = `Min ${Math.round(d0.temp.min)}° / Max ${Math.round(d0.temp.max)}°`;
+    // Min/Max aujourd'hui
+    const todayTemps = data.list.filter(d => {
+      const dDate = toLocalDateTime(d.dt, tzOffset).getDate();
+      return dDate === now.getDate();
+    }).map(d => d.main.temp);
+    const minTemp = Math.min(...todayTemps);
+    const maxTemp = Math.max(...todayTemps);
+    minMaxEl.textContent = `Min ${Math.round(minTemp)}° / Max ${Math.round(maxTemp)}°`;
 
-    const pop = Math.round((data.hourly?.[0]?.pop || 0) * 100);
+    // Probabilité de précipitations
+    const pop = Math.round((nowData.pop || 0) * 100);
     precipInfoEl.textContent = `Probabilité précip. ${pop}%`;
-    adviceEl.textContent = clothingAdvice(data.current.temp, pop);
+    adviceEl.textContent = clothingAdvice(nowData.main.temp, pop);
 
-    drawSparkline(data.hourly?.slice(0, 24).map(h => h.temp) || []);
+    // Sparkline sur les prochaines 24h (8 intervalles de 3h)
+    const temps24h = data.list.slice(0, 8).map(d => d.main.temp);
+    drawSparkline(temps24h);
 
-    // next hours
+    // Prochaines heures
     hourItems.innerHTML = '';
-    (data.hourly?.slice(0, 12) || []).forEach(h => {
-      const d = toLocalDateTime(h.dt, tz);
+    data.list.slice(0, 8).forEach(h => {
+      const d = toLocalDateTime(h.dt, tzOffset);
       const el = document.createElement('div');
       el.className = 'hourItem';
-      el.innerHTML = `<div>${d.getHours()}h</div><div>${Math.round(h.temp)}°</div><div>${Math.round((h.pop||0)*100)}%</div>`;
+      el.innerHTML = `<div>${d.getHours()}h</div><div>${Math.round(h.main.temp)}°</div><div>${Math.round((h.pop||0)*100)}%</div>`;
       hourItems.appendChild(el);
     });
 
     // body class selon météo
-    const main = (data.current.weather[0].main || '').toLowerCase();
+    const main = (nowData.weather[0].main || '').toLowerCase();
     document.body.setAttribute('data-weather', main.includes('rain') ? 'rain' : main.includes('cloud') ? 'clouds' : main.includes('snow') ? 'snow' : 'clear');
 
     // afficher le panneau
@@ -122,8 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- Événements ---
-
-  // Click Valider
   validateBtn.addEventListener('click', async () => {
     const query = cityInput.value.trim();
     if (!query) return alert('Tape le nom d’une ville.');
@@ -138,8 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const p = places[0];
       const lat = Number(p.lat);
       const lon = Number(p.lon);
-      const displayName = `${p.name}${p.state ? ', ' + p.state : ''}, ${p.country}`;
-      const weatherData = await fetchWeather(lat, lon);
+      const displayName = `${p.name}${p.state ? ', ' + p.state : ''}`;
+      const weatherData = await fetchForecast(lat, lon);
       showWeather(weatherData, displayName);
 
     } catch (err) {
@@ -151,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Click BACK
   backBtn.addEventListener('click', () => {
     weatherPanel.classList.add('hidden');
     document.querySelector('.intro').classList.remove('fadeOut');
