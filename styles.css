@@ -147,13 +147,13 @@ body {
 .hero .intro .controls .search .suggestions::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
-.hero .intro .controls .buttons {
+.hero .intro .controls .buttons .backBtn {
   display: flex;
   gap: 8px;
   position: relative;
   z-index: 5;
 }
-.hero .intro .controls .buttons .btn {
+.hero .intro .controls .buttons .backBtn .btn {
   padding: 10px 14px;
   border-radius: 8px;
   border: none;
@@ -163,14 +163,14 @@ body {
   background: linear-gradient(180deg, #00b4ff, #0095d9);
   color: #00283a;
 }
-.hero .intro .controls .buttons .btn:hover {
+.hero .intro .controls .buttons .backBtn .btn:hover {
   transform: translateY(-1px);
   opacity: 0.9;
 }
-.hero .intro .controls .buttons .btn.alt {
+.hero .intro .controls .buttons .backBtn .btn.alt {
   background: linear-gradient(180deg, #60d3ff, #2ca8e6);
 }
-.hero .intro .controls .buttons .btn.ghost {
+.hero .intro .controls .buttons .backBtn .btn.ghost {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
