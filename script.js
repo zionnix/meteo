@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const cityInput = document.getElementById('cityInput');
   const validateBtn = document.getElementById('validateBtn');
+  const geoBtn = document.getElementById('geoBtn');
   const weatherPanel = document.getElementById('weatherPanel');
   const backBtn = document.getElementById('backBtn');
   const suggestionsEl = document.querySelector('.suggestions');
@@ -178,5 +179,44 @@ document.addEventListener('DOMContentLoaded', () => {
       }catch{}
     }
   });
+
+  // Géolocalisation
+  if (geoBtn) {
+    geoBtn.addEventListener('click', async () => {
+      if (!navigator.geolocation) {
+        alert("La géolocalisation n'est pas supportée par votre navigateur");
+        return;
+      }
+
+      geoBtn.textContent = 'Localisation...';
+      geoBtn.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const weatherRes = await fetch(FORECAST_URL(latitude, longitude));
+            const data = await weatherRes.json();
+            if (data.cod !== "200") throw new Error("Erreur API météo");
+
+            const displayName = `${data.city.name}, ${data.city.country}`;
+            showWeather(data, displayName);
+          } catch (err) {
+            console.error(err);
+            alert("Impossible de récupérer la météo : " + err.message);
+          } finally {
+            geoBtn.textContent = 'Votre position';
+            geoBtn.disabled = false;
+          }
+        },
+        (error) => {
+          console.error(error);
+          alert("Impossible d'accéder à votre position. Veuillez autoriser la géolocalisation.");
+          geoBtn.textContent = 'Votre position';
+          geoBtn.disabled = false;
+        }
+      );
+    });
+  }
 
 });
