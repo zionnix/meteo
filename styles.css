@@ -25,12 +25,17 @@ body {
 }
 .bg-layer.bg-world {
   background-color: #0b63c9;
+  background-image: url("/assets/world-map.svg");
+  background-repeat: no-repeat;
+  background-position: center 35%;
+  background-size: 60%;
   opacity: 0.6;
   z-index: 1;
 }
 .bg-layer.bg-landscape {
-  opacity: 0;
+  background-image: url("/assets/landscape-day.jpg");
   z-index: 0;
+  opacity: 0;
 }
 
 .hero {
@@ -53,6 +58,9 @@ body {
   max-width: 760px;
   text-align: center;
   padding: 18px;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  position: relative;
+  z-index: 4;
 }
 .hero .intro h1 {
   margin-bottom: 4px;
@@ -70,7 +78,9 @@ body {
   flex-wrap: wrap;
 }
 .hero .intro .controls .search {
+  position: relative;
   width: 60%;
+  max-width: 520px;
 }
 .hero .intro .controls .search input {
   width: 100%;
@@ -81,6 +91,39 @@ body {
   color: #fff;
   font-size: 15px;
   outline: none;
+}
+.hero .intro .controls .search .suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  background: rgba(5, 10, 20, 0.8);
+  border-radius: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 50;
+  display: none;
+}
+.hero .intro .controls .search .suggestions li {
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.hero .intro .controls .search .suggestions li:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.hero .intro .controls .search .suggestions.show {
+  display: block;
+}
+.hero .intro .controls .buttons {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 5;
 }
 .hero .intro .controls .buttons .btn {
   padding: 10px 14px;
@@ -95,6 +138,20 @@ body {
 .hero .intro .controls .buttons .btn:hover {
   transform: translateY(-1px);
   opacity: 0.9;
+}
+.hero .intro .controls .buttons .btn.alt {
+  background: linear-gradient(180deg, #60d3ff, #2ca8e6);
+}
+.hero .intro .controls .buttons .btn.ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.fadeOut {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 .weather-panel {
@@ -136,16 +193,38 @@ body {
   gap: 18px;
   flex-wrap: wrap;
 }
-.weather-panel .container .left {
+.weather-panel .container .mainRow .left {
   flex: 1 1 60%;
 }
-.weather-panel .container .right {
+.weather-panel .container .mainRow .left .bigWeather .temp {
+  font-size: 48px;
+  font-weight: 800;
+}
+.weather-panel .container .mainRow .left .bigWeather .desc {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+.weather-panel .container .mainRow .left .bigWeather .minmax {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+.weather-panel .container .mainRow .left .precip {
+  margin-top: 8px;
+  opacity: 0.9;
+}
+.weather-panel .container .mainRow .left .advice {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 8px;
+}
+.weather-panel .container .mainRow .right {
   flex: 1 1 35%;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.weather-panel .container .card {
+.weather-panel .container .mainRow .right .card {
   -webkit-backdrop-filter: blur(8px) saturate(120%);
           backdrop-filter: blur(8px) saturate(120%);
   background: rgba(255, 255, 255, 0.06);
@@ -155,14 +234,33 @@ body {
   padding: 12px;
   border-radius: 8px;
 }
-.weather-panel .container .hourItems {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.weather-panel .container .mainRow .right .card h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
-
-.fadeOut {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: 0.4s ease;
+.weather-panel .container .mainRow .right .card.small {
+  font-size: 0.85rem;
+}
+.weather-panel .container .mainRow .right #sparkline {
+  width: 100%;
+  height: 60px;
+}
+.weather-panel .container .mainRow .right .hourItems {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  padding-top: 6px;
+}
+.weather-panel .container .mainRow .right .hourItems .hourItem {
+  min-width: 60px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px;
+  border-radius: 8px;
+}
+.weather-panel .container .controlsRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
 }/*# sourceMappingURL=styles.css.map */
