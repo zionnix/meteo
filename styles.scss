@@ -1,3 +1,8 @@
+// ===============================
+// 🌦️  Météo Interactive — SCSS corrigé
+// ===============================
+
+// ---------- Variables ----------
 $font-main: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial;
 $blue-primary: #0b63c9;
 $blue-accent: #00b4ff;
@@ -8,6 +13,7 @@ $glass-border: rgba(255, 255, 255, 0.12);
 $text-light: #fff;
 $shadow: 0 8px 30px rgba(2, 6, 23, 0.45);
 
+// ---------- Mixins ----------
 @mixin glass {
   backdrop-filter: blur(8px) saturate(120%);
   background: $glass-bg;
@@ -29,8 +35,17 @@ $shadow: 0 8px 30px rgba(2, 6, 23, 0.45);
   }
 }
 
-* { box-sizing: border-box; font-family: $font-main; }
-html, body, #app { height: 100%; margin: 0; }
+// ---------- Global ----------
+* {
+  box-sizing: border-box;
+  font-family: $font-main;
+}
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+}
+
 body {
   background: linear-gradient(180deg, $bg-dark 0%, #1b76e6 100%);
   color: $text-light;
@@ -38,8 +53,10 @@ body {
   position: relative;
 }
 
+// ---------- Background Layers ----------
 .bg-layer {
-  position: fixed; inset: 0;
+  position: fixed;
+  inset: 0;
   background-position: center;
   background-size: cover;
   transition: opacity 0.6s ease;
@@ -62,100 +79,244 @@ body {
   }
 }
 
+// ---------- Hero Section ----------
 .hero {
   height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 3; position: relative; padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  position: relative;
+  padding: 20px;
 
   .intro {
     @include glass;
-    width: 100%; max-width: 760px;
-    text-align: center; padding: 18px;
+    width: 100%;
+    max-width: 760px;
+    text-align: center;
+    padding: 18px;
     transition: opacity 0.4s ease, transform 0.4s ease;
-    position: relative; z-index: 4;
+    position: relative;
+    z-index: 4;
 
-    h1 { margin-bottom: 4px; }
-    .subtitle { opacity: 0.8; font-size: 0.95rem; }
+    h1 {
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      opacity: 0.8;
+      font-size: 0.95rem;
+    }
 
     .controls {
-      display: flex; gap: 12px; align-items: center; justify-content: center;
-      margin-top: 10px; flex-wrap: wrap;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
 
-      .search { position: relative; width: 60%; max-width: 520px;
+      .search {
+        position: relative;
+        width: 60%;
+        max-width: 520px;
+
         input {
-          width: 100%; padding: 12px; border-radius: 8px;
-          border: none; background: rgba(255,255,255,0.03);
-          color: $text-light; font-size: 15px; outline: none;
+          width: 100%;
+          padding: 12px;
+          border-radius: 8px;
+          border: none;
+          background: rgba(255, 255, 255, 0.03);
+          color: $text-light;
+          font-size: 15px;
+          outline: none;
+        }
+
+        .suggestions {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: calc(100% + 8px);
+          background: rgba(5, 10, 20, 0.8);
+          border-radius: 8px;
+          list-style: none;
+          margin: 0;
+          padding: 6px;
+          max-height: 220px;
+          overflow: auto;
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          z-index: 50;
+          display: none;
+
+          li {
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.03);
+            }
+          }
+
+          &.show {
+            display: block;
+          }
         }
       }
 
-      .buttons { display: flex; gap: 8px; position: relative; z-index: 5;
+      .buttons {
+        display: flex;
+        gap: 8px;
+        position: relative;
+        z-index: 5;
+
         .btn {
           @include btn-base;
           background: linear-gradient(180deg, $blue-accent, $blue-accent-dark);
           color: #00283a;
 
-          &.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: $text-light; }
+          &.alt {
+            background: linear-gradient(180deg, #60d3ff, #2ca8e6);
+          }
+
+          &.ghost {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: $text-light;
+          }
         }
       }
     }
   }
 }
 
-.fadeOut { opacity: 0; transform: translateY(-10px); transition: opacity 0.4s ease, transform 0.4s ease; }
+// ---------- FadeOut ----------
+.fadeOut {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
 
+// ---------- Weather Panel ----------
 .weather-panel {
-  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-  z-index: 5; padding: 28px;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  padding: 28px;
 
-  &.hidden { display: none; }
+  &.hidden {
+    display: none;
+  }
 
   .container {
     @include glass;
-    width: min(1100px, 95%); padding: 22px;
+    width: min(1100px, 95%);
+    padding: 22px;
 
-    .top { display: flex; justify-content: space-between; margin-bottom: 12px;
-      .place { font-weight: 700; font-size: 1.2rem; }
-      .time { opacity: 0.8; }
-    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
 
-    .mainRow { display: flex; gap: 18px; flex-wrap: wrap;
-
-      .left { flex: 1 1 60%;
-        .bigWeather {
-          .temp { font-size: 48px; font-weight: 800; }
-          .desc { font-size: 1.2rem; margin-bottom: 4px; }
-          .minmax { font-size: 0.9rem; opacity: 0.8; }
-        }
-        .precip { margin-top: 8px; opacity: 0.9; }
-        .advice { margin-top: 10px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; }
-
-        .dayEvolution { margin-top: 14px; }
+      .place {
+        font-weight: 700;
+        font-size: 1.2rem;
       }
 
-      .right { flex: 1 1 35%;
-        .hours { margin-top: 0; }
+      .time {
+        opacity: 0.8;
+      }
+    }
+
+    .mainRow {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+
+      .left {
+        flex: 1 1 60%;
+
+        .bigWeather {
+          .temp {
+            font-size: 48px;
+            font-weight: 800;
+          }
+
+          .desc {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+          }
+
+          .minmax {
+            font-size: 0.9rem;
+            opacity: 0.8;
+          }
+        }
+
+        .precip {
+          margin-top: 8px;
+          opacity: 0.9;
+        }
+
+        .advice {
+          margin-top: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 10px;
+          border-radius: 8px;
+        }
+      }
+
+      .right {
+        flex: 1 1 35%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .card {
+          @include glass;
+          padding: 12px;
+          border-radius: 8px;
+
+          h4 {
+            margin: 0 0 6px 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+          }
+
+          &.small {
+            font-size: 0.85rem;
+          }
+        }
+
+        #sparkline {
+          width: 100%;
+          height: 60px;
+        }
+
         .hourItems {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-          gap: 12px; overflow-x: auto; padding-top: 6px;
+          display: flex;
+          gap: 8px;
+          overflow: auto;
+          padding-top: 6px;
+
           .hourItem {
-            background: rgba(255,255,255,0.08); padding: 12px;
-            border-radius: 10px; text-align: center;
-            display: flex; flex-direction: column; gap: 4px;
-            transition: transform 0.2s ease;
-            &:hover { transform: translateY(-3px); background: rgba(255,255,255,0.15); }
-            .temp { font-size: 1.2rem; font-weight: 700; }
-            .pop { font-size: 0.9rem; color: #b0e0ff; }
+            min-width: 60px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px;
+            border-radius: 8px;
           }
         }
       }
     }
 
-    footer.controlsRow { display: flex; justify-content: center; margin-top: 12px;
-      .btn { @include btn-base; &.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: $text-light; } }
+    .controlsRow {
+      display: flex;
+      justify-content: center;
+      margin-top: 14px;
     }
   }
 }
-
-#sparkline { width: 100%; height: 100px; margin-top: 12px; }
