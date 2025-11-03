@@ -135,6 +135,7 @@ body {
 }
 .hero .intro .controls .search .suggestions::-webkit-scrollbar {
   width: 6px;
+  backrgound-color : transparent;
 }
 .hero .intro .controls .search .suggestions::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
