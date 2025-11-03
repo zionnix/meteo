@@ -1,143 +1,120 @@
-document.addEventListener('DOMContentLoaded', () => {
+const apiKey = "VOTRE_API_KEY_ICI"; // remplace par ton API Key
+const weatherPanel = document.getElementById("weatherPanel");
+const placeName = document.getElementById("placeName");
+const localTime = document.getElementById("localTime");
+const tempNow = document.getElementById("tempNow");
+const weatherDesc = document.getElementById("weatherDesc");
+const minMax = document.getElementById("minMax");
+const precipInfo = document.getElementById("precipInfo");
+const advice = document.getElementById("advice");
+const hourItems = document.getElementById("hourItems");
+const sparkline = document.getElementById("sparkline");
 
-  const API_KEY = '840f2e7255bcf146931fd21cbbbe7b97';
-  const FORECAST_URL = (city) =>
-    `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&units=metric&appid=${API_KEY}`;
+const cityInput = document.getElementById("cityInput");
+const validateBtn = document.getElementById("validateBtn");
+const locBtn = document.getElementById("locBtn");
+const backBtn = document.getElementById("backBtn");
+const intro = document.querySelector(".intro");
 
-  // --- DOM ---
-  const cityInput = document.getElementById('cityInput');
-  const validateBtn = document.getElementById('validateBtn');
-  const weatherPanel = document.getElementById('weatherPanel');
-  const backBtn = document.getElementById('backBtn');
+async function fetchWeatherByCity(city) {
+  try {
+    const geoRes = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`);
+    const geoData = await geoRes.json();
+    if (!geoData[0]) throw new Error("Ville non trouvée");
+    const { lat, lon, name } = geoData[0];
+    return fetchWeather(lat, lon, name);
+  } catch (e) { alert(e.message); }
+}
 
-  const placeNameEl = document.getElementById('placeName');
-  const localTimeEl = document.getElementById('localTime');
-  const tempNowEl = document.getElementById('tempNow');
-  const weatherDescEl = document.getElementById('weatherDesc');
-  const minMaxEl = document.getElementById('minMax');
-  const precipInfoEl = document.getElementById('precipInfo');
-  const adviceEl = document.getElementById('advice');
-  const sparkline = document.getElementById('sparkline');
-  const hourItems = document.getElementById('hourItems');
+async function fetchWeather(lat, lon, name) {
+  try {
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}&lang=fr`);
+    const data = await res.json();
+    if (data.cod !== "200") throw new Error(data.message || "Erreur API météo");
 
-  // --- Helpers ---
-  async function fetchWeather(city) {
-    try {
-      const res = await fetch(FORECAST_URL(city));
-      if (!res.ok) throw new Error('Erreur API météo');
-      return await res.json();
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
+    displayWeather(data, name);
+  } catch (e) {
+    console.error(e);
+    alert("Impossible de récupérer la météo : " + e.message);
   }
+}
 
-  function getLocalTime(unixUTC, timezoneOffsetSec) {
-    return new Date((unixUTC + timezoneOffsetSec) * 1000);
-  }
+function displayWeather(data, city) {
+  intro.classList.add("fadeOut");
+  setTimeout(() => intro.style.display = "none", 400);
 
-  function clothingAdvice(temp, pop) {
-    const t = Math.round(temp);
-    const parts = [];
-    if (t <= 0) parts.push("Gros manteau et gants ❄️");
-    else if (t <= 8) parts.push("Manteau chaud");
-    else if (t <= 15) parts.push("Veste / pull");
-    else if (t <= 22) parts.push("T-shirt + légère couche");
-    else parts.push("Tenue légère 🌞");
+  weatherPanel.classList.remove("hidden");
+  placeName.textContent = city;
+  localTime.textContent = new Date().toLocaleTimeString();
 
-    if (pop >= 60) parts.push("Parapluie requis");
-    else if (pop >= 30) parts.push("Parapluie conseillé");
+  const first = data.list[0];
+  tempNow.textContent = Math.round(first.main.temp) + "°C";
+  weatherDesc.textContent = first.weather[0].description;
+  minMax.textContent = `Min ${Math.round(first.main.temp_min)}° / Max ${Math.round(first.main.temp_max)}°`;
+  precipInfo.textContent = `Précipitations : ${Math.round((first.pop||0)*100)}%`;
+  advice.textContent = first.weather[0].main === "Rain" ? "Pense à prendre un parapluie !" : "Bonne journée !";
 
-    return parts.join(' — ');
-  }
+  // Heure suivantes
+  hourItems.innerHTML = '';
+  data.list.slice(0, 12).forEach(h => {
+    const d = new Date(h.dt * 1000);
+    const el = document.createElement("div");
+    el.className = "hourItem";
+    el.innerHTML = `<div class="hour">${d.getHours()}h</div>
+                    <div class="temp">${Math.round(h.main.temp)}°</div>
+                    <div class="pop">${Math.round((h.pop||0)*100)}%</div>`;
+    hourItems.appendChild(el);
+  });
 
-  function drawSparkline(values, times) {
-    const w = 300, h = 80, pad = 10;
-    if (!values.length) return (sparkline.innerHTML = '');
+  // Graphique
+  drawSparkline(
+    data.list.slice(0, 24).map(h => h.main.temp),
+    data.list.slice(0, 24).map(h => h.pop||0),
+    data.list.slice(0, 24).map(h => new Date(h.dt * 1000).getHours() + 'h')
+  );
+}
 
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = Math.max(1, max - min);
-    const step = (w - pad*2) / (values.length - 1);
+function drawSparkline(values, pops, hours) {
+  const w = 600, h = 100, pad = 20;
+  if (!values.length) return (sparkline.innerHTML = '');
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(1, max - min);
+  const step = (w - pad * 2) / (values.length - 1);
 
-    const pts = values.map((v, i) => `${pad + i*step},${h - pad - ((v - min)/range)*(h - pad*2)}`).join(' ');
-    const area = `<polygon points="${pts} ${w-pad},${h-pad} ${pad},${h-pad}" fill="rgba(255,255,255,0.06)"/>`;
-    const line = `<polyline points="${pts}" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    sparkline.innerHTML = area + line;
-  }
+  let linePoints = values.map((v,i)=>{
+    const x = pad + i*step;
+    const y = h - pad - ((v-min)/range)*(h-pad*2);
+    return `${x},${y}`;
+  }).join(' ');
 
-  function showWeather(data) {
-    const tzOffset = data.city.timezone; // en secondes
-    const now = getLocalTime(Math.floor(Date.now()/1000), tzOffset);
+  let bars = pops.map((p,i)=>{
+    const x = pad + i*step - 5;
+    const y = h - pad - p*(h-pad*2);
+    const barH = p*(h-pad*2);
+    return `<rect x="${x}" y="${y}" width="10" height="${barH}" fill="rgba(0,180,255,0.3)"/>`;
+  }).join('');
 
-    placeNameEl.textContent = `${data.city.name}, ${data.city.country}`;
-    localTimeEl.textContent = `${now.toLocaleDateString()} • ${now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+  let labels = hours.map((hr,i)=>{
+    const x = pad + i*step;
+    return `<text x="${x}" y="${h-5}" font-size="10" text-anchor="middle" fill="#fff">${hr}</text>`;
+  }).join('');
 
-    const firstEntry = data.list[0];
-    tempNowEl.textContent = `${Math.round(firstEntry.main.temp)}°C`;
-    weatherDescEl.textContent = firstEntry.weather[0].description;
+  const polyline = `<polyline points="${linePoints}" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"/>`;
+  sparkline.innerHTML = bars + polyline + labels;
+}
 
-    // Min/Max des prochaines 24h
-    const next24h = data.list.slice(0, 8); // toutes les 3h => 8 entrées = 24h
-    const minTemp = Math.min(...next24h.map(e => e.main.temp_min));
-    const maxTemp = Math.max(...next24h.map(e => e.main.temp_max));
-    minMaxEl.textContent = `Min ${Math.round(minTemp)}° / Max ${Math.round(maxTemp)}°`;
-
-    const pop = Math.round((next24h[0].pop || 0) * 100);
-    precipInfoEl.textContent = `Probabilité précip. ${pop}%`;
-    adviceEl.textContent = clothingAdvice(firstEntry.main.temp, pop);
-
-    drawSparkline(next24h.map(e => e.main.temp), next24h.map(e => e.dt));
-
-    // Next hours (plus grand)
-    hourItems.innerHTML = '';
-    data.list.slice(0, 12).forEach(h => {
-      const d = getLocalTime(h.dt, tzOffset);
-      const el = document.createElement('div');
-      el.className = 'hourItem';
-      el.style.flex = '1 1 70px'; // plus large
-      el.innerHTML = `<div style="font-weight:600">${d.getHours()}h</div>
-                      <div style="font-size:1.2rem">${Math.round(h.main.temp)}°</div>
-                      <div style="opacity:0.8">${Math.round((h.pop||0)*100)}%</div>`;
-      hourItems.appendChild(el);
+// Événements
+validateBtn.addEventListener("click", ()=>fetchWeatherByCity(cityInput.value));
+locBtn.addEventListener("click", ()=>{
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos=>{
+      fetchWeather(pos.coords.latitude, pos.coords.longitude, "Votre position");
     });
-
-    // Body class météo
-    const main = (firstEntry.weather[0].main || '').toLowerCase();
-    document.body.setAttribute('data-weather', main.includes('rain') ? 'rain' : main.includes('cloud') ? 'clouds' : main.includes('snow') ? 'snow' : 'clear');
-
-    // Afficher le panneau
-    weatherPanel.classList.remove('hidden');
-    document.querySelector('.intro').classList.add('fadeOut');
-    document.getElementById('bgWorld').style.opacity = 0;
-    document.getElementById('bgLandscape').style.opacity = 1;
-  }
-
-  // --- Événements ---
-  validateBtn.addEventListener('click', async () => {
-    const city = cityInput.value.trim();
-    if (!city) return alert('Tape le nom d’une ville.');
-
-    validateBtn.disabled = true;
-    validateBtn.textContent = 'Chargement...';
-
-    try {
-      const weatherData = await fetchWeather(city);
-      showWeather(weatherData);
-    } catch (err) {
-      console.error(err);
-      alert('Erreur lors de la récupération météo.');
-    } finally {
-      validateBtn.disabled = false;
-      validateBtn.textContent = 'Valider';
-    }
-  });
-
-  backBtn.addEventListener('click', () => {
-    weatherPanel.classList.add('hidden');
-    document.querySelector('.intro').classList.remove('fadeOut');
-    document.getElementById('bgWorld').style.opacity = 1;
-    document.getElementById('bgLandscape').style.opacity = 0;
-  });
-
+  } else alert("Géolocalisation non supportée");
+});
+backBtn.addEventListener("click", ()=>{
+  weatherPanel.classList.add("hidden");
+  intro.style.display = "block";
+  intro.classList.remove("fadeOut");
 });
