@@ -1,10 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   const API_KEY = '840f2e7255bcf146931fd21cbbbe7b97';
+
+  // URL pour obtenir la géolocalisation d'une ville
   const GEOCODING_URL = (q, limit = 6) =>
     `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=${limit}&appid=${API_KEY}`;
-  const FORECAST = (lat, lon) =>
-    `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`;
+
+  // URL pour obtenir la météo via forecast
+  const FORECAST_URL = (lat, lon) =>
+    `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=fr`;
 
   // --- DOM ---
   const cityInput = document.getElementById('cityInput');
@@ -36,17 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchWeather(lat, lon) {
     try {
-      const res = await fetch(FORECAST(lat, lon));
+      const res = await fetch(FORECAST_URL(lat, lon));
       if (!res.ok) throw new Error('Erreur API météo');
       return await res.json();
     } catch (err) {
       console.error(err);
       throw err;
     }
-  }
-
-  function toLocalDateTime(unixSec, tzOffsetSec) {
-    return new Date((unixSec + tzOffsetSec) * 1000);
   }
 
   function clothingAdvice(temp, pop) {
@@ -75,46 +75,44 @@ document.addEventListener('DOMContentLoaded', () => {
     sparkline.innerHTML = area + line;
   }
 
-  // --- Affichage météo ---
   function showWeather(data, displayName) {
-    const tzOffset = data.city.timezone || 0; // en secondes
+    // prendre le premier bloc pour "actuel"
     const nowData = data.list[0];
-
-    const now = new Date((nowData.dt + tzOffset) * 1000);
-
     placeNameEl.textContent = displayName;
+    const now = new Date(nowData.dt * 1000);
     localTimeEl.textContent = `${now.toLocaleDateString()} • ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
     tempNowEl.textContent = `${Math.round(nowData.main.temp)}°C`;
     weatherDescEl.textContent = nowData.weather[0].description;
 
-    // Min / Max sur les 8 prochaines tranches (24h)
-    const nextTemps = data.list.slice(0, 8).map(l => l.main.temp);
-    const min = Math.min(...nextTemps);
-    const max = Math.max(...nextTemps);
-    minMaxEl.textContent = `Min ${Math.round(min)}° / Max ${Math.round(max)}°`;
+    const minTemp = Math.min(...data.list.slice(0, 8).map(l => l.main.temp_min));
+    const maxTemp = Math.max(...data.list.slice(0, 8).map(l => l.main.temp_max));
+    minMaxEl.textContent = `Min ${Math.round(minTemp)}° / Max ${Math.round(maxTemp)}°`;
 
     const pop = Math.round((nowData.pop || 0) * 100);
     precipInfoEl.textContent = `Probabilité précip. ${pop}%`;
     adviceEl.textContent = clothingAdvice(nowData.main.temp, pop);
 
-    // Graphique
-    drawSparkline(nextTemps);
+    drawSparkline(data.list.slice(0, 8).map(l => l.main.temp));
 
-    // Prochaines heures
+    // heures
     hourItems.innerHTML = '';
-    data.list.slice(0, 8).forEach(h => {
-      const d = new Date((h.dt + tzOffset) * 1000);
+    data.list.slice(0, 12).forEach(l => {
+      const d = new Date(l.dt * 1000);
       const el = document.createElement('div');
       el.className = 'hourItem';
-      el.innerHTML = `<div>${d.getHours()}h</div><div>${Math.round(h.main.temp)}°</div><div>${Math.round((h.pop||0)*100)}%</div>`;
+      el.style.flex = '1 0 80px'; // pour plus de visibilité
+      el.innerHTML = `<div>${d.getHours()}h</div>
+                      <div>${Math.round(l.main.temp)}°</div>
+                      <div>${Math.round((l.pop || 0) * 100)}%</div>`;
       hourItems.appendChild(el);
     });
 
-    // Body class selon météo
+    // background selon météo
     const main = (nowData.weather[0].main || '').toLowerCase();
     document.body.setAttribute('data-weather', main.includes('rain') ? 'rain' : main.includes('cloud') ? 'clouds' : main.includes('snow') ? 'snow' : 'clear');
 
-    // Afficher le panneau
+    // afficher le panneau
     weatherPanel.classList.remove('hidden');
     document.querySelector('.intro').classList.add('fadeOut');
     document.getElementById('bgWorld').style.opacity = 0;
