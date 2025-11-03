@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const API_KEY = 'f955b0166857244999c0b1287687bc9b';
+  const API_KEY = '840f2e7255bcf146931fd21cbbbe7b97';
   const GEOCODING_URL = (q, limit=6) =>
     `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=${limit}&appid=${API_KEY}`;
   const ONECALL = (lat, lon) =>
@@ -154,3 +154,4 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 });
+
