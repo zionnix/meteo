@@ -14,18 +14,11 @@
     <main class="hero">
       <div class="glass card intro">
         <h1>Météo interactive</h1>
-        <p class="subtitle">
-          Tape une ville ou clique sur <strong>Votre position</strong>
-        </p>
+        <p class="subtitle">Tape une ville ou clique sur <strong>Votre position</strong></p>
 
         <div class="controls">
           <div class="search">
-            <input
-              id="cityInput"
-              placeholder="Chercher une ville (ex : Paris, Liège...)"
-              autocomplete="off"
-            />
-            <ul id="suggestions" class="suggestions"></ul>
+            <input id="cityInput" placeholder="Chercher une ville (ex : Paris, Liège...)" autocomplete="off" />
           </div>
           <div class="buttons">
             <button id="validateBtn" class="btn">Valider</button>
@@ -54,8 +47,8 @@
 
           <div class="right">
             <div class="dayEvolution card small" id="evolution">
-              <h4>Évolution (12 prochaines heures)</h4>
-              <svg id="sparkline" viewBox="0 0 360 80" preserveAspectRatio="none"></svg>
+              <h4>Évolution (24h)</h4>
+              <svg id="sparkline" viewBox="0 0 240 60" preserveAspectRatio="none"></svg>
             </div>
 
             <div class="hours card small" id="hourList">
