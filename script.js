@@ -1,15 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   const API_KEY = '840f2e7255bcf146931fd21cbbbe7b97';
-  const GEO_URL = (q, limit = 5) =>
+  const GEOCODING_URL = (q, limit = 6) =>
     `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=${limit}&appid=${API_KEY}`;
-  const FORECAST_URL = (lat, lon) =>
-    `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=fr`;
+  const FORECAST = (lat, lon) =>
+    `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`;
 
+  // --- DOM ---
   const cityInput = document.getElementById('cityInput');
-  const suggestionsEl = document.getElementById('suggestions');
   const validateBtn = document.getElementById('validateBtn');
-  const locBtn = document.getElementById('locBtn');
   const weatherPanel = document.getElementById('weatherPanel');
   const backBtn = document.getElementById('backBtn');
 
@@ -23,91 +22,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const sparkline = document.getElementById('sparkline');
   const hourItems = document.getElementById('hourItems');
 
-  // ---- Autocomplétion ----
-  let debounceTimer;
-  cityInput.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    const query = cityInput.value.trim();
-    if (!query) return (suggestionsEl.innerHTML = '', suggestionsEl.classList.remove('show'));
-    debounceTimer = setTimeout(async () => {
-      const res = await fetch(GEO_URL(query));
-      const places = await res.json();
-      suggestionsEl.innerHTML = '';
-      if (!places.length) {
-        suggestionsEl.classList.remove('show');
-        return;
-      }
-      places.forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = `${p.name}${p.state ? ', ' + p.state : ''}, ${p.country}`;
-        li.addEventListener('click', () => {
-          cityInput.value = p.name;
-          suggestionsEl.classList.remove('show');
-        });
-        suggestionsEl.appendChild(li);
-      });
-      suggestionsEl.classList.add('show');
-    }, 400);
-  });
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.search')) suggestionsEl.classList.remove('show');
-  });
-
-  // ---- Géolocalisation ----
-  locBtn.addEventListener('click', () => {
-    if (!navigator.geolocation) return alert("La géolocalisation n'est pas supportée.");
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const { latitude, longitude } = pos.coords;
-      try {
-        const res = await fetch(FORECAST_URL(latitude, longitude));
-        const data = await res.json();
-        showWeather(data, "Votre position");
-      } catch (err) {
-        alert("Erreur lors de la récupération météo de votre position.");
-      }
-    }, () => alert("Impossible d’obtenir votre position."));
-  });
-
-  // ---- Fetch météo ----
-  async function fetchWeather(city) {
-    const geoRes = await fetch(GEO_URL(city, 1));
-    const geoData = await geoRes.json();
-    if (!geoData.length) throw new Error("Ville introuvable");
-    const { lat, lon, name, country } = geoData[0];
-    const weatherRes = await fetch(FORECAST_URL(lat, lon));
-    const data = await weatherRes.json();
-    if (data.cod !== "200") throw new Error("Erreur API météo");
-    return { data, displayName: `${name}, ${country}` };
+  // --- Fonctions helpers ---
+  async function fetchPlaces(query, limit = 6) {
+    try {
+      const res = await fetch(GEOCODING_URL(query, limit));
+      if (!res.ok) throw new Error('Erreur géocodage');
+      return await res.json();
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
   }
 
-  function showWeather(weatherData, displayName) {
-    const data = weatherData.list[0];
-    const tzOffset = weatherData.city.timezone || 0;
-    const now = new Date((data.dt + tzOffset) * 1000);
+  async function fetchWeather(lat, lon) {
+    try {
+      const res = await fetch(FORECAST(lat, lon));
+      if (!res.ok) throw new Error('Erreur API météo');
+      return await res.json();
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
 
-    placeNameEl.textContent = displayName;
-    localTimeEl.textContent = `${now.toLocaleDateString()} • ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    tempNowEl.textContent = `${Math.round(data.main.temp)}°C`;
-    weatherDescEl.textContent = data.weather[0].description;
-    minMaxEl.textContent = `Min ${Math.round(data.main.temp_min)}° / Max ${Math.round(data.main.temp_max)}°`;
-    const pop = Math.round((data.pop || 0) * 100);
-    precipInfoEl.textContent = `Probabilité précip. ${pop}%`;
-    adviceEl.textContent = clothingAdvice(data.main.temp, pop);
-
-    drawSparkline(weatherData.list.slice(0, 8).map(h => h.main.temp));
-
-    hourItems.innerHTML = '';
-    weatherData.list.slice(0, 12).forEach(h => {
-      const d = new Date((h.dt + tzOffset) * 1000);
-      const el = document.createElement('div');
-      el.className = 'hourItem';
-      el.innerHTML = `<div>${d.getHours()}h</div><div>${Math.round(h.main.temp)}°</div><div>${Math.round((h.pop || 0) * 100)}%</div>`;
-      hourItems.appendChild(el);
-    });
-
-    weatherPanel.classList.remove('hidden');
-    document.querySelector('.intro').classList.add('fadeOut');
+  function toLocalDateTime(unixSec, tzOffsetSec) {
+    return new Date((unixSec + tzOffsetSec) * 1000);
   }
 
   function clothingAdvice(temp, pop) {
@@ -121,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (pop >= 60) parts.push("Parapluie requis");
     else if (pop >= 30) parts.push("Parapluie conseillé");
+
     return parts.join(' — ');
   }
 
@@ -129,24 +69,92 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!values.length) return (sparkline.innerHTML = '');
     const min = Math.min(...values), max = Math.max(...values), range = Math.max(1, max - min);
     const step = (w - pad * 2) / (values.length - 1);
-    const pts = values.map((v, i) => `${pad + i * step},${h - pad - (v - min) / range * (h - pad * 2)}`);
-    sparkline.innerHTML = `<polyline fill="none" stroke="#00b4ff" stroke-width="2" points="${pts.join(' ')}" />`;
+    const pts = values.map((v, i) => `${pad + i * step},${h - pad - ((v - min) / range) * (h - pad * 2)}`).join(' ');
+    const area = `<polygon points="${pts} ${w - pad},${h - pad} ${pad},${h - pad}" fill="rgba(255,255,255,0.06)"/>`;
+    const line = `<polyline points="${pts}" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    sparkline.innerHTML = area + line;
   }
 
+  // --- Affichage météo ---
+  function showWeather(data, displayName) {
+    const tzOffset = data.city.timezone || 0; // en secondes
+    const nowData = data.list[0];
+
+    const now = new Date((nowData.dt + tzOffset) * 1000);
+
+    placeNameEl.textContent = displayName;
+    localTimeEl.textContent = `${now.toLocaleDateString()} • ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    tempNowEl.textContent = `${Math.round(nowData.main.temp)}°C`;
+    weatherDescEl.textContent = nowData.weather[0].description;
+
+    // Min / Max sur les 8 prochaines tranches (24h)
+    const nextTemps = data.list.slice(0, 8).map(l => l.main.temp);
+    const min = Math.min(...nextTemps);
+    const max = Math.max(...nextTemps);
+    minMaxEl.textContent = `Min ${Math.round(min)}° / Max ${Math.round(max)}°`;
+
+    const pop = Math.round((nowData.pop || 0) * 100);
+    precipInfoEl.textContent = `Probabilité précip. ${pop}%`;
+    adviceEl.textContent = clothingAdvice(nowData.main.temp, pop);
+
+    // Graphique
+    drawSparkline(nextTemps);
+
+    // Prochaines heures
+    hourItems.innerHTML = '';
+    data.list.slice(0, 8).forEach(h => {
+      const d = new Date((h.dt + tzOffset) * 1000);
+      const el = document.createElement('div');
+      el.className = 'hourItem';
+      el.innerHTML = `<div>${d.getHours()}h</div><div>${Math.round(h.main.temp)}°</div><div>${Math.round((h.pop||0)*100)}%</div>`;
+      hourItems.appendChild(el);
+    });
+
+    // Body class selon météo
+    const main = (nowData.weather[0].main || '').toLowerCase();
+    document.body.setAttribute('data-weather', main.includes('rain') ? 'rain' : main.includes('cloud') ? 'clouds' : main.includes('snow') ? 'snow' : 'clear');
+
+    // Afficher le panneau
+    weatherPanel.classList.remove('hidden');
+    document.querySelector('.intro').classList.add('fadeOut');
+    document.getElementById('bgWorld').style.opacity = 0;
+    document.getElementById('bgLandscape').style.opacity = 1;
+  }
+
+  // --- Événements ---
   validateBtn.addEventListener('click', async () => {
-    const city = cityInput.value.trim();
-    if (!city) return alert("Tape le nom d'une ville.");
+    const query = cityInput.value.trim();
+    if (!query) return alert('Tape le nom d’une ville.');
+
+    validateBtn.disabled = true;
+    validateBtn.textContent = 'Chargement...';
+
     try {
-      const { data, displayName } = await fetchWeather(city);
-      showWeather(data, displayName);
+      const places = await fetchPlaces(query, 1);
+      if (!places.length) return alert('Ville introuvable.');
+
+      const p = places[0];
+      const lat = Number(p.lat);
+      const lon = Number(p.lon);
+      const displayName = `${p.name}${p.state ? ', ' + p.state : ''}, ${p.country}`;
+
+      const weatherData = await fetchWeather(lat, lon);
+      showWeather(weatherData, displayName);
+
     } catch (err) {
-      alert("Erreur lors de la récupération météo.");
+      console.error(err);
+      alert('Erreur lors de la récupération météo.');
+    } finally {
+      validateBtn.disabled = false;
+      validateBtn.textContent = 'Valider';
     }
   });
 
   backBtn.addEventListener('click', () => {
     weatherPanel.classList.add('hidden');
     document.querySelector('.intro').classList.remove('fadeOut');
+    document.getElementById('bgWorld').style.opacity = 1;
+    document.getElementById('bgLandscape').style.opacity = 0;
   });
 
 });
