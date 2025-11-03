@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const API_KEY = '840f2e7255bcf146931fd21cbbbe7b97';
 
-  const GEO_URL = (q, limit=1) =>
+  const GEO_URL = (q, limit=1) => 
     `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=${limit}&appid=${API_KEY}`;
 
   const FORECAST_URL = (lat, lon) =>
@@ -247,3 +247,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
