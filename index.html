@@ -29,7 +29,7 @@
             </div>
             <div class="buttons">
               <button id="validateBtn" class="btn">Valider</button>
-              <button id="locBtn" class="btn alt">Votre position</button>
+              <button id="locBtn" class="btn">Votre position</button>
             </div>
           </div>
         </div>
@@ -57,7 +57,7 @@
             <div class="right">
               <div class="dayEvolution card small" id="evolution">
                 <h4>Évolution (24h)</h4>
-                <div class="barGraph" id="barGraph"></div>
+                <svg id="sparkline" viewBox="0 0 240 60" preserveAspectRatio="none"></svg>
               </div>
 
               <div class="hours card small" id="hourList">
@@ -77,3 +77,4 @@
     <script src="script.js" type="module"></script>
   </body>
 </html>
+
