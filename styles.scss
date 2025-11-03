@@ -130,6 +130,10 @@ body {
           color: $text-light;
           font-size: 15px;
           outline: none;
+          
+          &::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+          }
         }
 
         .suggestions {
@@ -137,29 +141,54 @@ body {
           left: 0;
           right: 0;
           top: calc(100% + 8px);
-          background: rgba(5, 10, 20, 0.8);
+          background: rgba(5, 10, 20, 0.95);
+          backdrop-filter: blur(10px);
           border-radius: 8px;
           list-style: none;
           margin: 0;
           padding: 6px;
           max-height: 220px;
           overflow: auto;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
           z-index: 50;
           display: none;
 
           li {
-            padding: 8px;
+            padding: 10px 12px;
             border-radius: 6px;
             cursor: pointer;
+            transition: background 0.2s ease;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
 
             &:hover {
-              background: rgba(255, 255, 255, 0.03);
+              background: rgba(255, 255, 255, 0.1);
+              color: #fff;
             }
           }
 
           &.show {
             display: block;
+          }
+
+          /* Scrollbar styling */
+          &::-webkit-scrollbar {
+            width: 6px;
+          }
+
+          &::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+          }
+
+          &::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.3);
+            }
           }
         }
       }
