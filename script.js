@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const cityInput = document.getElementById('cityInput');
   const validateBtn = document.getElementById('validateBtn');
-  const geoBtn = document.getElementById('geoBtn');
+  const geoBtn = document.getElementById('locBtn');
   const weatherPanel = document.getElementById('weatherPanel');
   const backBtn = document.getElementById('backBtn');
   const suggestionsEl = document.querySelector('.suggestions');
@@ -181,42 +181,69 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Géolocalisation
-  if (geoBtn) {
-    geoBtn.addEventListener('click', async () => {
+  const geoBtnElement = document.getElementById('locBtn');
+  console.log('Bouton géolocalisation trouvé:', geoBtnElement);
+  
+  if (geoBtnElement) {
+    geoBtnElement.addEventListener('click', async () => {
+      console.log('Clic sur géolocalisation détecté');
+      
       if (!navigator.geolocation) {
         alert("La géolocalisation n'est pas supportée par votre navigateur");
         return;
       }
 
-      geoBtn.textContent = 'Localisation...';
-      geoBtn.disabled = true;
+      geoBtnElement.textContent = 'Localisation...';
+      geoBtnElement.disabled = true;
 
       navigator.geolocation.getCurrentPosition(
         async (position) => {
+          console.log('Position obtenue:', position.coords);
           const { latitude, longitude } = position.coords;
           try {
             const weatherRes = await fetch(FORECAST_URL(latitude, longitude));
             const data = await weatherRes.json();
+            console.log('Données météo reçues:', data);
+            
             if (data.cod !== "200") throw new Error("Erreur API météo");
 
             const displayName = `${data.city.name}, ${data.city.country}`;
             showWeather(data, displayName);
           } catch (err) {
-            console.error(err);
+            console.error('Erreur fetch météo:', err);
             alert("Impossible de récupérer la météo : " + err.message);
           } finally {
-            geoBtn.textContent = 'Votre position';
-            geoBtn.disabled = false;
+            geoBtnElement.textContent = 'Votre position';
+            geoBtnElement.disabled = false;
           }
         },
         (error) => {
-          console.error(error);
-          alert("Impossible d'accéder à votre position. Veuillez autoriser la géolocalisation.");
-          geoBtn.textContent = 'Votre position';
-          geoBtn.disabled = false;
+          console.error('Erreur géolocalisation:', error);
+          let message = "Impossible d'accéder à votre position.";
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              message = "Vous avez refusé l'accès à votre position. Veuillez autoriser la géolocalisation dans les paramètres de votre navigateur.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              message = "Votre position est indisponible.";
+              break;
+            case error.TIMEOUT:
+              message = "La demande de géolocalisation a expiré.";
+              break;
+          }
+          alert(message);
+          geoBtnElement.textContent = 'Votre position';
+          geoBtnElement.disabled = false;
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
         }
       );
     });
+  } else {
+    console.error('Le bouton #locBtn n\'a pas été trouvé dans le DOM');
   }
 
 });
