@@ -1,79 +1,95 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Météo interactive</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div id="app" class="landing">
-      <div class="bg-layer bg-world" id="bgWorld"></div>
-      <div class="bg-layer bg-landscape" id="bgLandscape"></div>
-
-      <main class="hero">
-        <div class="glass card intro">
-          <h1>Météo interactive</h1>
-          <p class="subtitle">
-            Tape une ville ou clique sur <strong>Votre position</strong>
-          </p>
-
-          <div class="controls">
-            <div class="search">
-              <input
-                id="cityInput"
-                placeholder="Chercher une ville (ex : Lisbonne, Liège...)"
-                autocomplete="off"
-              />
-              <ul id="suggestions" class="suggestions"></ul>
-            </div>
-            <div class="buttons">
-              <button id="validateBtn" class="btn">Valider</button>
-              <button id="locBtn" class="btn">Votre position</button>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <section id="weatherPanel" class="weather-panel hidden">
-        <div class="glass container">
-          <header class="top">
-            <div class="place" id="placeName">—</div>
-            <div class="time" id="localTime">—</div>
-          </header>
-
-          <div class="mainRow">
-            <div class="left">
-              <div class="bigWeather">
-                <div class="temp" id="tempNow">—°C</div>
-                <div class="desc" id="weatherDesc">—</div>
-                <div class="minmax" id="minMax">Min — / Max —</div>
-              </div>
-
-              <div class="precip" id="precipInfo">Précipitations : —</div>
-              <div class="advice" id="advice">Conseil : —</div>
-            </div>
-
-            <div class="right">
-              <div class="dayEvolution card small" id="evolution">
-                <h4>Évolution (24h)</h4>
-                <svg id="sparkline" viewBox="0 0 240 60" preserveAspectRatio="none"></svg>
-              </div>
-
-              <div class="hours card small" id="hourList">
-                <h4>Prochaines heures</h4>
-                <div class="hourItems" id="hourItems"></div>
-              </div>
-            </div>
-          </div>
-
-          <footer class="controlsRow">
-            <button id="backBtn" class="btn ghost">Rechercher une autre ville</button>
-          </footer>
-        </div>
-      </section>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Météo interactive</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <div class="intro">
+      <input id="cityInput" placeholder="Ville (ex : Paris)" />
+      <button id="validateBtn">Valider</button>
     </div>
 
-    <script src="script.js" type="module"></script>
-  </body>
+    <div id="weatherPanel" class="hidden">
+      <h2 id="placeName">—</h2>
+      <div id="localTime">—</div>
+      <div id="tempNow">—°C</div>
+      <div id="weatherDesc">—</div>
+      <div id="hourList"></div>
+      <button id="backBtn">Rechercher une autre ville</button>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const API_KEY = '840f2e7255bcf146931fd21cbbbe7b97';
+
+    const cityInput = document.getElementById('cityInput');
+    const validateBtn = document.getElementById('validateBtn');
+    const weatherPanel = document.getElementById('weatherPanel');
+    const backBtn = document.getElementById('backBtn');
+
+    const placeNameEl = document.getElementById('placeName');
+    const localTimeEl = document.getElementById('localTime');
+    const tempNowEl = document.getElementById('tempNow');
+    const weatherDescEl = document.getElementById('weatherDesc');
+    const hourListEl = document.getElementById('hourList');
+
+    async function fetchCityCoords(city) {
+      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${API_KEY}`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('Erreur géocodage');
+      const data = await res.json();
+      if(!data.length) throw new Error('Ville introuvable');
+      return {lat: data[0].lat, lon: data[0].lon, name: data[0].name, country: data[0].country};
+    }
+
+    async function fetchWeather(lat, lon) {
+      const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=fr`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('Erreur météo');
+      return await res.json();
+    }
+
+    function displayWeather(data, cityName) {
+      placeNameEl.textContent = cityName;
+      const now = new Date();
+      localTimeEl.textContent = `Heure locale : ${now.toLocaleString()}`;
+      tempNowEl.textContent = `${Math.round(data.list[0].main.temp)}°C`;
+      weatherDescEl.textContent = data.list[0].weather[0].description;
+
+      hourListEl.innerHTML = '';
+      data.list.slice(0, 12).forEach(item => {
+        const date = new Date(item.dt * 1000);
+        const el = document.createElement('div');
+        el.innerHTML = `${date.getHours()}h : ${Math.round(item.main.temp)}°C • ${Math.round(item.pop*100 || 0)}% précip`;
+        hourListEl.appendChild(el);
+      });
+
+      weatherPanel.classList.remove('hidden');
+    }
+
+    validateBtn.addEventListener('click', async () => {
+      const city = cityInput.value.trim();
+      if(!city) return alert('Tape le nom d’une ville');
+
+      try {
+        const coords = await fetchCityCoords(city);
+        const weatherData = await fetchWeather(coords.lat, coords.lon);
+        displayWeather(weatherData, `${coords.name}, ${coords.country}`);
+      } catch(e) {
+        console.error(e);
+        alert('Impossible de récupérer la météo : ' + e.message);
+      }
+    });
+
+    backBtn.addEventListener('click', () => {
+      weatherPanel.classList.add('hidden');
+    });
+  });
+  </script>
+</body>
 </html>
