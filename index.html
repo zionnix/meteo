@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Météo interactive</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app" class="landing">
+      <div id="weatherAnim" class="weather-anim" aria-hidden="true"></div>
+      <div class="bg-layer bg-world" id="bgWorld"></div>
+      <div class="bg-layer bg-landscape" id="bgLandscape"></div>
+
+      <main class="hero">
+        <div class="glass card intro">
+          <h1>Météo interactive</h1>
+          <p class="subtitle">
+            Tape une ville ou clique sur <strong>Votre position</strong>
+          </p>
+
+          <div class="controls">
+            <div class="search">
+              <input
+                id="cityInput"
+                placeholder="Chercher une ville (ex : Lisbonne, Liège...)"
+                autocomplete="off"
+              />
+              <ul id="suggestions" class="suggestions"></ul>
+            </div>
+            <div class="buttons">
+              <button type="button" id="validateBtn" class="btn">Valider</button>
+              <button type="button" id="locBtn" class="btn">Votre position</button>
+              <button type="button" id="unitToggle" class="btn ghost">°C</button>
+              <button type="button" id="themeToggle" class="btn ghost">Thème</button>
+            </div>
+          </div>
+          <div id="historyWrap" class="historyWrap">
+            <h4>Recherches récentes</h4>
+            <div id="historyList" class="historyList"></div>
+          </div>
+        </div>
+      </main>
+
+      <section id="weatherPanel" class="weather-panel hidden">
+        <div class="glass container">
+          <header class="top">
+            <div class="place" id="placeName">—</div>
+            <div class="time" id="localTime">—</div>
+          </header>
+
+          <div class="mainRow">
+            <div class="left">
+              <div class="bigWeather">
+                <div class="temp" id="tempNow">—°C</div>
+                <div class="desc" id="weatherDesc">—</div>
+                <div class="minmax" id="minMax">Min — / Max —</div>
+              </div>
+
+              <div class="precip" id="precipInfo">Précipitations : —</div>
+              <div class="advice" id="advice">Conseil : —</div>
+            </div>
+
+            <div class="right">
+              <div class="dayEvolution card small" id="evolution">
+                <h4>Évolution des raffales de vent (24h)</h4>
+                <svg id="sparkline" viewBox="0 0 240 60" preserveAspectRatio="none"></svg>
+              </div>
+
+              <div class="hours card small" id="hourList">
+                <h4>Prochaines heures</h4>
+                <div class="hourItems" id="hourItems"></div>
+              </div>
+            </div>
+          </div>
+
+          <section id="forecastSection" class="forecastSection">
+            <h4>Prévisions 5 jours</h4>
+            <div id="forecastCards" class="forecastCards"></div>
+            <svg id="forecastChart" viewBox="0 0 500 120" class="forecastChart" preserveAspectRatio="none"></svg>
+          </section>
+
+          <footer class="controlsRow">
+            <button type="button" id="backBtn" class="btn ghost">Rechercher une autre ville</button>
+          </footer>
+        </div>
+      </section>
+    </div>
+
+    <script src="script.js" type="module"></script>
+  </body>
+</html>
+
