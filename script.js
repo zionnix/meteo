@@ -127,8 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       currentUnit = currentUnit === 'C' ? 'F' : 'C';
       unitToggle.textContent = currentUnit === 'C' ? '°C' : '°F';
-      // Only update displayed temps if weather already loaded
-      if (lastFetched) showWeather(lastFetched.data, lastFetched.displayName, true);
+      // Only update displayed temps if weather panel is currently visible
+      if (lastFetched && weatherPanel && !weatherPanel.classList.contains('hidden')) {
+        showWeather(lastFetched.data, lastFetched.displayName, true);
+      }
     });
   }
 
