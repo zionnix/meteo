@@ -127,10 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       currentUnit = currentUnit === 'C' ? 'F' : 'C';
       unitToggle.textContent = currentUnit === 'C' ? '°C' : '°F';
-      // Only update displayed temps if weather panel is currently visible
-      if (lastFetched && weatherPanel && !weatherPanel.classList.contains('hidden')) {
-        showWeather(lastFetched.data, lastFetched.displayName, true);
-      }
+      // Only update displayed temps if weather already loaded
+      if (lastFetched) showWeather(lastFetched.data, lastFetched.displayName, true);
     });
   }
 
@@ -193,9 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderForecast(weatherData);
 
-    const mainWeather = current.weather[0].main || current.weather[0].description;
-    setWeatherAnimation(mainWeather);
-
     weatherPanel.classList.remove('hidden');
     document.querySelector('.intro').classList.add('fadeOut');
 
@@ -252,8 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
   backBtn.addEventListener('click', ()=>{
     weatherPanel.classList.add('hidden');
     document.querySelector('.intro').classList.remove('fadeOut');
-    // Remove weather backgrounds when going back to home
-    document.body.classList.remove('weather-sun', 'weather-clouds', 'weather-rain', 'weather-snow');
   });
 
   // Validation avec la touche Entrée
@@ -393,32 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const step = (w - pad*2) / (values.length - 1);
     const pts = values.map((v,i)=> `${pad + i*step},${h - pad - (v-min)/range*(h - pad*2)}`);
     forecastChart.innerHTML = `<polyline fill="none" stroke="#fff" stroke-width="2" points="${pts.join(' ')}" />`;
-  }
-
-  function setWeatherAnimation(mainWeather){
-    if (!weatherAnimEl) return;
-    weatherAnimEl.innerHTML = '';
-    weatherAnimEl.className = 'weather-anim';
-    const w = mainWeather.toLowerCase();
-    
-    // Remove all weather background classes
-    document.body.classList.remove('weather-sun', 'weather-clouds', 'weather-rain', 'weather-snow');
-    
-    if (w.includes('rain') || w.includes('drizzle') || w.includes('thunder')) {
-      weatherAnimEl.classList.add('rain');
-      document.body.classList.add('weather-rain');
-    } else if (w.includes('snow')) {
-      weatherAnimEl.classList.add('clouds');
-      document.body.classList.add('weather-snow');
-    } else if (w.includes('cloud')) {
-      weatherAnimEl.classList.add('clouds');
-      document.body.classList.add('weather-clouds');
-    } else if (w.includes('clear') || w.includes('sun')) {
-      weatherAnimEl.classList.add('sun');
-      document.body.classList.add('weather-sun');
-    } else {
-      weatherAnimEl.classList.add('default');
-    }
   }
 
 });
