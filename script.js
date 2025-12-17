@@ -120,12 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Unit toggle
+  // Unit toggle - change temperature display only, never validate city
   if (unitToggle) {
     unitToggle.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       currentUnit = currentUnit === 'C' ? 'F' : 'C';
       unitToggle.textContent = currentUnit === 'C' ? '°C' : '°F';
+      // Only update displayed temps if weather already loaded
       if (lastFetched) showWeather(lastFetched.data, lastFetched.displayName, true);
     });
   }
