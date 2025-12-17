@@ -191,6 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderForecast(weatherData);
 
+    const mainWeather = current.weather[0].main || current.weather[0].description;
+    setWeatherAnimation(mainWeather);
+
     weatherPanel.classList.remove('hidden');
     document.querySelector('.intro').classList.add('fadeOut');
 
@@ -386,6 +389,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const step = (w - pad*2) / (values.length - 1);
     const pts = values.map((v,i)=> `${pad + i*step},${h - pad - (v-min)/range*(h - pad*2)}`);
     forecastChart.innerHTML = `<polyline fill="none" stroke="#fff" stroke-width="2" points="${pts.join(' ')}" />`;
+  }
+
+  function setWeatherAnimation(mainWeather){
+    if (!weatherAnimEl) return;
+    weatherAnimEl.innerHTML = '';
+    weatherAnimEl.className = 'weather-anim';
+    const w = mainWeather.toLowerCase();
+    if (w.includes('rain') || w.includes('drizzle') || w.includes('thunder')) {
+      weatherAnimEl.classList.add('rain');
+    } else if (w.includes('cloud')) {
+      weatherAnimEl.classList.add('clouds');
+    } else if (w.includes('clear') || w.includes('sun')) {
+      weatherAnimEl.classList.add('sun');
+    } else {
+      weatherAnimEl.classList.add('default');
+    }
   }
 
 });
