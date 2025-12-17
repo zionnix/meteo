@@ -98,25 +98,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Theme toggle: cycle through themes [dark, light, solar]
+  // Theme toggle: cycle through themes [default, sombre, clair]
   if (themeToggle) {
-    const themes = ['theme-dark','theme-light','theme-solar'];
-    // initialize default
-    if (!document.body.classList.contains('theme-light') && !document.body.classList.contains('theme-solar')) {
-      document.body.classList.add('theme-dark');
-      themeToggle.textContent = 'Sombre';
-    }
+    const themes = ['','theme-sombre','theme-clair'];
+    themeToggle.textContent = 'Défaut';
     function getCurrentThemeIndex(){
-      return themes.findIndex(t=>document.body.classList.contains(t));
+      for (let i = 1; i < themes.length; i++) {
+        if (document.body.classList.contains(themes[i])) return i;
+      }
+      return 0; // défaut (pas de classe)
     }
     themeToggle.addEventListener('click', (e) => {
       e.preventDefault();
       const idx = getCurrentThemeIndex();
       const next = (idx + 1) % themes.length;
-      themes.forEach(t=>document.body.classList.remove(t));
-      document.body.classList.add(themes[next]);
+      themes.forEach(t => { if (t) document.body.classList.remove(t); });
+      if (themes[next]) document.body.classList.add(themes[next]);
       // update button label
-      const labels = { 'theme-dark':'Sombre', 'theme-light':'Clair', 'theme-solar':'Soleil' };
+      const labels = { '':'Défaut', 'theme-sombre':'Sombre', 'theme-clair':'Clair' };
       themeToggle.textContent = labels[themes[next]] || 'Thème';
     });
   }

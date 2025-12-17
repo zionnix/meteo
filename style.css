@@ -13,15 +13,19 @@
     color: #fff;
     overflow: hidden;
     position: relative;
+    transition: background 0.4s ease, color 0.4s ease;
   }
 
-  body.theme-light {
-    background: linear-gradient(180deg, #f6f9ff 0%, #e8f0ff 100%);
-    color: #0b2b3a;
+  /* Thème Sombre - gris foncé */
+  body.theme-sombre {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    color: #e0e0e0;
   }
-  body.theme-solar {
-    background: linear-gradient(180deg, #fff7e6 0%, #ffe6b3 100%);
-    color: #3b2f0b;
+
+  /* Thème Clair - blanc crème */
+  body.theme-clair {
+    background: linear-gradient(180deg, #fffef5 0%, #f5f0e1 100%);
+    color: #2b2b2b;
   }
 
   
