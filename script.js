@@ -252,6 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
   backBtn.addEventListener('click', ()=>{
     weatherPanel.classList.add('hidden');
     document.querySelector('.intro').classList.remove('fadeOut');
+    // Remove weather backgrounds when going back to home
+    document.body.classList.remove('weather-sun', 'weather-clouds', 'weather-rain', 'weather-snow');
   });
 
   // Validation avec la touche Entrée
@@ -398,12 +400,22 @@ document.addEventListener('DOMContentLoaded', () => {
     weatherAnimEl.innerHTML = '';
     weatherAnimEl.className = 'weather-anim';
     const w = mainWeather.toLowerCase();
+    
+    // Remove all weather background classes
+    document.body.classList.remove('weather-sun', 'weather-clouds', 'weather-rain', 'weather-snow');
+    
     if (w.includes('rain') || w.includes('drizzle') || w.includes('thunder')) {
       weatherAnimEl.classList.add('rain');
+      document.body.classList.add('weather-rain');
+    } else if (w.includes('snow')) {
+      weatherAnimEl.classList.add('clouds');
+      document.body.classList.add('weather-snow');
     } else if (w.includes('cloud')) {
       weatherAnimEl.classList.add('clouds');
+      document.body.classList.add('weather-clouds');
     } else if (w.includes('clear') || w.includes('sun')) {
       weatherAnimEl.classList.add('sun');
+      document.body.classList.add('weather-sun');
     } else {
       weatherAnimEl.classList.add('default');
     }
